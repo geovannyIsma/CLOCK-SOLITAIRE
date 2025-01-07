@@ -5,6 +5,105 @@ import math
 
 # Configuración inicial
 pygame.init()
+class Card:
+    def __init__(self, value, suit):
+        self.value = value
+        self.suit = suit
+        self.key = f"{value}_{suit}"
+        self.back = True
+
+    def flip(self):
+        self.back = False
+
+deck = []
+k_hands = {}
+move_count = 0
+card = 13
+resultado = ""
+
+def initialize_deck(self):
+    global deck
+    suits = ['brillo', 'trebol', 'corazon_negro', 'corazon_rojo']
+    values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K']
+    self.deck.clear()
+
+    for suit in suits:
+        for value in values:
+            self.deck.append(Card(suit, value))
+
+def shuffle(self):
+    for _ in range(9):
+        self.american_shuffle()
+
+
+def american_shuffle(self):
+    global deck
+    mitad = len(deck) // 2
+    temp_deck = []
+    left = deck[:mitad]
+    right = deck[mitad:]
+
+    while left or right:
+        for _ in range(random.randint(1, 5)):
+            if left:
+                temp_deck.append(left.pop(0))
+        for _ in range(random.randint(1, 5)):
+            if right:
+                temp_deck.append(right.pop(0))
+
+    deck.clear()
+    deck.extend(temp_deck)
+
+def clock_dealing():
+    global k_hands
+    global deck
+    k_hands.clear()
+    for i in range(1, 14):
+        hand = []
+        for _ in range(4):
+            if len(deck) > 0:
+                hand.append(deck.pop(0))
+        k_hands[i] = hand
+        print(f"Mano {i}: {', '.join(f'{card.suit}{card.value}' for card in hand)}")
+    return k_hands
+
+def verify_lost():
+    global k_hands, move_count
+    if move_count == 52:
+        return False
+    if all(card.back for card in k_hands[13] if card.value == 'K'):
+        return True
+    return False
+
+def verify_win():
+    global k_hands, move_count
+    if move_count == 52:
+        return True
+
+def get_hand_index(self, value):
+    hand_indices = {
+        'A': 1, '2': 2, '3': 3, '4': 4, '5': 5,
+        '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10,
+        'J': 11, 'Q': 12, 'K': 13
+    }
+    return hand_indices.get(value, 1)
+
+def play_game():
+    global k_hands, move_count, resultado, running
+    if verify_lost():
+        running = False
+        resultado = "Perdiste"
+    if verify_win():
+        running = False
+        resultado = "Ganaste"
+
+    card_in_game = k_hands[13][0]
+    card_in_game.flip()
+    hand = get_hand_index(card_in_game.value)
+    k_hands[hand].append(card_in_game)
+    k_hands[13].remove(card_in_game)
+    move_count += 1
+    return hand
 
 # Tamaño de ventana y cartas
 WIDTH, HEIGHT = 1920, 1080  # Resolución Full HD
@@ -58,18 +157,6 @@ def load_card_images():
         card_back = pygame.Surface((CARD_WIDTH, CARD_HEIGHT))
         card_back.fill(BLACK)  # Si no hay imagen de reverso, usamos un rectángulo negro
 
-# Función para barajar y distribuir cartas
-def shuffle_deck():
-    deck = []
-    for value in ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']:
-        for suit in ['brillo', 'trebol', 'corazon_negro', 'corazon_rojo']:
-            key = f"{value}_{suit}"
-            if key in card_images:
-                deck.append(key)
-
-    random.shuffle(deck)
-    for i, card in enumerate(deck):
-        piles[i % 13].append(card)
 
 # Dibujar pilas de cartas con rotación
 def draw_piles():
@@ -99,7 +186,6 @@ def main():
     clock = pygame.time.Clock()
 
     load_card_images()  # Cargar imágenes
-    shuffle_deck()  # Barajar y distribuir cartas
 
     while running:
         screen.blit(background_image, (0, 0))  # Dibuja la imagen de fondo
