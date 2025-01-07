@@ -147,8 +147,8 @@ def load_card_images():
     for file_name in os.listdir(sprites_dir):
         if file_name.endswith(".png"):
             name, _ = file_name.split(".")  # Quita la extensión
-            image = pygame.image.load(os.path.join(sprites_dir, file_name))
-            card_images[name] = pygame.transform.scale(image, (CARD_WIDTH, CARD_HEIGHT))
+            image = pygame.image.load(os.path.join(sprites_dir, file_name)).convert_alpha()
+            card_images[name] = pygame.transform.smoothscale(image, (CARD_WIDTH, CARD_HEIGHT))
 
     # Cargar y redimensionar la parte trasera de las cartas
     if "atras" in card_images:
