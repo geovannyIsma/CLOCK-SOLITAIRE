@@ -161,24 +161,18 @@ def load_card_images():
 # Dibujar pilas de cartas con rotación
 def draw_piles():
     for i, pile in enumerate(CLOCK_POSITIONS + [CENTER_POSITION]):
+        x, y = pile
+        angle = (i * (360 / 12)) % 360 if i < 12 else 0  # Las cartas centrales no rotan
+
         if piles[i]:  # Si la pila tiene cartas
             card = piles[i][-1]  # La carta superior
-            x, y = pile
-
-            # Calcular el ángulo para inclinar la carta
-            angle = (i * (360 / 12)) % 360 if i < 12 else 0  # Las cartas centrales no rotan
-
-            # Rotar la imagen de la carta
             rotated_image = pygame.transform.rotate(card_images[card], -angle)  # Invertir signo para giro antihorario
             rect = rotated_image.get_rect(center=(x, y))
-
-            # Dibujar la carta
             screen.blit(rotated_image, rect.topleft)
         else:  # Mostrar reverso si está vacío
-            x, y = pile
-            screen.blit(card_back, (x - CARD_WIDTH // 2, y - CARD_HEIGHT // 2))
-
-
+            rotated_back = pygame.transform.rotate(card_back, -angle)  # Rotar la parte trasera
+            rect = rotated_back.get_rect(center=(x, y))
+            screen.blit(rotated_back, rect.topleft)
 # Lógica principal
 def main():
     global card_images, card_back
