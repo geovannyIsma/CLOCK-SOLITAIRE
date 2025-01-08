@@ -1,4 +1,4 @@
-import sys, pygame, time, random, os, math
+import sys, pygame,os, math
 from pygame.locals import *
 import cards
 
@@ -64,10 +64,24 @@ def dibujar_tablero():
     for i in range(13):
         dibujar_cartas(posicion_hora[i][0], posicion_hora[i][1], i)
 
+def barajeo_americano(mazo):
+    mitad = len(mazo) // 2
+    izquierda = mazo[:mitad]
+    derecha = mazo[mitad:]
+    mazo_barajeado = []
+
+    while izquierda or derecha:
+        if izquierda:
+            mazo_barajeado.append(izquierda.pop(0))
+        if derecha:
+            mazo_barajeado.append(derecha.pop(0))
+
+    return mazo_barajeado
+
 def barajar_cartas():
-    random.shuffle(cards.talia)
     global reloj
     reloj = [[] for _ in range(13)]
+    cards.talia = barajeo_americano(cards.talia)
     for i, carta in enumerate(cards.talia):
         reloj[i // 4].append(carta)
         carta.ocultar()
