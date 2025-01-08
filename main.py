@@ -1,6 +1,7 @@
 import sys, pygame, os, math
 from pygame.locals import *
 import cards
+import random
 
 pygame.init()
 
@@ -14,7 +15,6 @@ pygame.display.set_caption("Solitario del Reloj 0.1 beta")
 
 BLANCO = (255, 255, 255)
 NEGRO = (0, 0, 0)
-
 
 # Ajusta el centro del reloj para que esté más centrado verticalmente
 CENTRO_X, CENTRO_Y = ANCHO // 2, ALTO // 2 - 100
@@ -81,10 +81,12 @@ def barajeo_americano(mazo):
     mazo_barajeado = []
 
     while izquierda or derecha:
-        if izquierda:
-            mazo_barajeado.append(izquierda.pop(0))
-        if derecha:
-            mazo_barajeado.append(derecha.pop(0))
+        for _ in range(random.randint(1, 5)):
+            if izquierda:
+                mazo_barajeado.append(izquierda.pop(0))
+        for _ in range(random.randint(1, 5)):
+            if derecha:
+                mazo_barajeado.append(derecha.pop(0))
 
     return mazo_barajeado
 
@@ -92,7 +94,8 @@ def barajeo_americano(mazo):
 def barajar_cartas():
     global reloj
     reloj = [[] for _ in range(13)]
-    cards.talia = barajeo_americano(cards.talia)
+    for _ in range(10):  # Realizar el barajeo americano 10 veces
+        cards.talia = barajeo_americano(cards.talia)
     for i, carta in enumerate(cards.talia):
         reloj[i // 4].append(carta)
         carta.ocultar()
