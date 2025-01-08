@@ -15,6 +15,7 @@ pygame.display.set_caption("Solitario del Reloj 0.1 beta")
 BLANCO = (255, 255, 255)
 NEGRO = (0, 0, 0)
 
+
 # Ajusta el centro del reloj para que esté más centrado verticalmente
 CENTRO_X, CENTRO_Y = ANCHO // 2, ALTO // 2 - 100
 
@@ -64,13 +65,10 @@ def dibujar_cartas(ancho, alto, hora):
 
     # Dibuja la última carta (la carta superior) al final
     if reloj[hora]:
-<<<<<<< HEAD
         pantalla.blit(reloj[hora][-1].carta, (ancho, alto))
-=======
         pantalla.blit(reloj[hora][0].carta, (ancho, alto))
 
 
->>>>>>> origin/master
 def dibujar_tablero():
     for i in range(13):
         dibujar_cartas(posicion_hora[i][0], posicion_hora[i][1], i)
@@ -148,10 +146,6 @@ def perder():
                 if evento.key == K_r:
                     bucle_principal()
 
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/master
 def bucle_principal():
     barajar_cartas()
     perdido = False
