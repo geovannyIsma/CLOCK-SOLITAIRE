@@ -54,7 +54,7 @@ cargar_imagenes_cartas()
 
 def dibujar_cartas(ancho, alto, hora):
     # Dibuja todas las cartas excepto la última
-    for carta in reloj[hora][:-1]:
+    for carta in reversed(reloj[hora][1:]):
         superficie_carta = carta.carta
         rect_carta = superficie_carta.get_rect()
         rect_mitad = pygame.Rect(0, 0, min(cards.carta_atras.get_width(), rect_carta.width),
@@ -65,7 +65,6 @@ def dibujar_cartas(ancho, alto, hora):
 
     # Dibuja la última carta (la carta superior) al final
     if reloj[hora]:
-        pantalla.blit(reloj[hora][-1].carta, (ancho, alto))
         pantalla.blit(reloj[hora][0].carta, (ancho, alto))
 
 
@@ -191,8 +190,8 @@ def bucle_principal():
                     if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
                             posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
                             lista_horas[Objetivo.simbolo] == ite):
-                        reloj[ite].append(Objetivo)
-                        reloj[ite][0].mostrar()
+                        reloj[ite].append(Objetivo)  # Mover la carta al fondo de la pila
+                        reloj[ite][0].mostrar()  # Mostrar la carta superior
                         Objetivo = None
                         verificar_si_lleno(ite)
                         movimientos += 1  # Incrementar el contador de movimientos
