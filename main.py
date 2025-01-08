@@ -132,9 +132,8 @@ def ganar():
 
 
 def perder():
-    pantalla.fill(NEGRO)
     imagen_perder = pygame.image.load("Sprites/perdio.png")
-    imagen_perder = pygame.transform.scale(imagen_perder, (ANCHO // 2, ALTO // 2))
+    imagen_perder = pygame.transform.scale(imagen_perder, (ANCHO // 3.5, ALTO // 3.5))
     pantalla.blit(imagen_perder, ((ANCHO - imagen_perder.get_width()) // 2, (ALTO - imagen_perder.get_height()) // 2))
     pygame.display.flip()
     while True:
@@ -155,6 +154,8 @@ def bucle_principal():
     atrapado = False
     Objetivo = None
     pos_temp = None
+    movimientos = 0
+    fuente = pygame.font.SysFont(None, 36)
 
     while True:
         pantalla.blit(imagen_fondo, (0, 0))
@@ -194,6 +195,7 @@ def bucle_principal():
                         reloj[ite][0].mostrar()
                         Objetivo = None
                         verificar_si_lleno(ite)
+                        movimientos += 1  # Incrementar el contador de movimientos
                         if hora_llena[ite] and ite != 12:
                             for i in range(ite, 13):
                                 if i >= 12:
@@ -215,6 +217,10 @@ def bucle_principal():
 
         if atrapado and Objetivo:
             pantalla.blit(Objetivo.carta, (pos[0] - 20, pos[1] - 20))
+
+        # Dibujar el contador de movimientos
+        texto_movimientos = fuente.render(f"Movimientos: {movimientos}", True, BLANCO)
+        pantalla.blit(texto_movimientos, (10, 10))
 
         pygame.display.flip()
 
