@@ -1,4 +1,4 @@
-import sys, pygame,os, math
+import sys, pygame, os, math
 from pygame.locals import *
 import cards
 
@@ -6,7 +6,7 @@ pygame.init()
 
 ANCHO, ALTO = 1920, 1080
 ANCHO_CARTA, ALTO_CARTA = 120, 180
-RADIO = 320
+RADIO = 400
 
 tamaño = ANCHO, ALTO
 pantalla = pygame.display.set_mode(tamaño)
@@ -18,10 +18,11 @@ NEGRO = (0, 0, 0)
 # Ajusta el centro del reloj para que esté más centrado verticalmente
 CENTRO_X, CENTRO_Y = ANCHO // 2, ALTO // 2 - 100
 
+# Desplaza las posiciones una a la derecha
 posicion_hora = [
     (
-        CENTRO_X + RADIO * math.cos(i * (2 * math.pi / 12) - math.pi / 2),
-        CENTRO_Y + RADIO * math.sin(i * (2 * math.pi / 12) - math.pi / 2)
+        CENTRO_X + RADIO * math.cos((i + 1) * (2 * math.pi / 12) - math.pi / 2),
+        CENTRO_Y + RADIO * math.sin((i + 1) * (2 * math.pi / 12) - math.pi / 2)
     )
     for i in range(12)
 ]
@@ -48,18 +49,17 @@ cargar_imagenes_cartas()
 
 def dibujar_cartas(ancho, alto, hora):
     # Dibuja todas las cartas excepto la última
-    for carta in reloj[hora][1:]:
+    for carta in reloj[hora][:-1]:
         superficie_carta = carta.carta
         rect_carta = superficie_carta.get_rect()
         rect_mitad = pygame.Rect(0, 0, min(cards.carta_atras.get_width(), rect_carta.width), min(cards.carta_atras.get_height(), rect_carta.height))
         pantalla.blit(superficie_carta.subsurface(rect_mitad), (ancho, alto))
-        ancho -= 12
-        alto += 5
+        ancho += 12  # Cambia el desplazamiento horizontal a positivo
+        alto -= 5  # Cambia el desplazamiento vertical a negativo
 
     # Dibuja la última carta (la carta superior) al final
     if reloj[hora]:
-        pantalla.blit(reloj[hora][0].carta, (ancho, alto))
-
+        pantalla.blit(reloj[hora][-1].carta, (ancho, alto))
 def dibujar_tablero():
     for i in range(13):
         dibujar_cartas(posicion_hora[i][0], posicion_hora[i][1], i)
@@ -130,6 +130,7 @@ def perder():
                     sys.exit()
                 if evento.key == K_r:
                     bucle_principal()
+
 def bucle_principal():
     barajar_cartas()
     perdido = False
