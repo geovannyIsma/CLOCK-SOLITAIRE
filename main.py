@@ -9,8 +9,8 @@ ANCHO, ALTO = 1920, 1080
 ANCHO_CARTA, ALTO_CARTA = 120, 180
 RADIO = 400
 
-tamaño = ANCHO, ALTO
-pantalla = pygame.display.set_mode(tamaño)
+tamanio = ANCHO, ALTO
+pantalla = pygame.display.set_mode(tamanio, pygame.FULLSCREEN)
 pygame.display.set_caption("Solitario del Reloj 0.1 beta")
 
 BLANCO = (255, 255, 255)
