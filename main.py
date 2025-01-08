@@ -220,7 +220,7 @@ def bucle_principal():
 
         # Dibujar el contador de movimientos
         texto_movimientos = fuente.render(f"Movimientos: {movimientos}", True, BLANCO)
-        pantalla.blit(texto_movimientos, (10, 10))
+        pantalla.blit(texto_movimientos, (150, 10))
 
         pygame.display.flip()
 
