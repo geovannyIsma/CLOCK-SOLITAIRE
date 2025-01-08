@@ -31,7 +31,9 @@ posicion_hora.append((CENTRO_X, CENTRO_Y))
 imagen_fondo = pygame.image.load(os.path.join("Sprites", "fondo.jpg"))
 imagen_fondo = pygame.transform.scale(imagen_fondo, (ANCHO, ALTO))
 
-lista_horas = {simbolo: i for i, simbolo in enumerate(['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'])}
+lista_horas = {simbolo: i for i, simbolo in
+               enumerate(['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'])}
+
 
 def cargar_imagenes_cartas():
     dir_sprites = "Sprites"
@@ -45,24 +47,34 @@ def cargar_imagenes_cartas():
     if "atras" not in cards.imagenes_cartas:
         cards.carta_atras.fill(NEGRO)
 
+
 cargar_imagenes_cartas()
+
 
 def dibujar_cartas(ancho, alto, hora):
     # Dibuja todas las cartas excepto la última
     for carta in reloj[hora][:-1]:
         superficie_carta = carta.carta
         rect_carta = superficie_carta.get_rect()
-        rect_mitad = pygame.Rect(0, 0, min(cards.carta_atras.get_width(), rect_carta.width), min(cards.carta_atras.get_height(), rect_carta.height))
+        rect_mitad = pygame.Rect(0, 0, min(cards.carta_atras.get_width(), rect_carta.width),
+                                 min(cards.carta_atras.get_height(), rect_carta.height))
         pantalla.blit(superficie_carta.subsurface(rect_mitad), (ancho, alto))
         ancho += 12  # Cambia el desplazamiento horizontal a positivo
         alto -= 5  # Cambia el desplazamiento vertical a negativo
 
     # Dibuja la última carta (la carta superior) al final
     if reloj[hora]:
+<<<<<<< HEAD
         pantalla.blit(reloj[hora][-1].carta, (ancho, alto))
+=======
+        pantalla.blit(reloj[hora][0].carta, (ancho, alto))
+
+
+>>>>>>> origin/master
 def dibujar_tablero():
     for i in range(13):
         dibujar_cartas(posicion_hora[i][0], posicion_hora[i][1], i)
+
 
 def barajeo_americano(mazo):
     mitad = len(mazo) // 2
@@ -78,6 +90,7 @@ def barajeo_americano(mazo):
 
     return mazo_barajeado
 
+
 def barajar_cartas():
     global reloj
     reloj = [[] for _ in range(13)]
@@ -89,11 +102,14 @@ def barajar_cartas():
     global hora_llena
     hora_llena = [False] * 13
 
+
 def verificar_si_lleno(ite):
     if ite != 12:
         hora_llena[ite] = len(reloj[ite]) == 4 and all(not carta.oculta for carta in reloj[ite])
     else:
-        hora_llena[ite] = len(reloj[ite]) == 4 and all(not carta.oculta and carta.simbolo == "K" for carta in reloj[ite])
+        hora_llena[ite] = len(reloj[ite]) == 4 and all(
+            not carta.oculta and carta.simbolo == "K" for carta in reloj[ite])
+
 
 def ganar():
     pantalla.fill(NEGRO)
@@ -113,6 +129,7 @@ def ganar():
                 if evento.key == K_r:
                     bucle_principal()
 
+
 def perder():
     pantalla.fill(NEGRO)
     imagen_perder = pygame.image.load("Sprites/perdio.png")
@@ -131,6 +148,10 @@ def perder():
                 if evento.key == K_r:
                     bucle_principal()
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
 def bucle_principal():
     barajar_cartas()
     perdido = False
@@ -199,5 +220,6 @@ def bucle_principal():
             pantalla.blit(Objetivo.carta, (pos[0] - 20, pos[1] - 20))
 
         pygame.display.flip()
+
 
 bucle_principal()
