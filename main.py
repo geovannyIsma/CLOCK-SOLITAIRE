@@ -51,6 +51,22 @@ def cargar_imagenes_cartas():
 
 cargar_imagenes_cartas()
 
+def animar_movimiento(carta, pos_inicial, pos_final, duracion=250):
+    reloj = pygame.time.Clock()
+    tiempo_inicial = pygame.time.get_ticks()
+    while True:
+        tiempo_actual = pygame.time.get_ticks()
+        tiempo_transcurrido = tiempo_actual - tiempo_inicial
+        if tiempo_transcurrido >= duracion:
+            break
+        t = tiempo_transcurrido / duracion
+        x = pos_inicial[0] + t * (pos_final[0] - pos_inicial[0])
+        y = pos_inicial[1] + t * (pos_final[1] - pos_inicial[1])
+        pantalla.blit(imagen_fondo, (0, 0))
+        dibujar_tablero()
+        pantalla.blit(carta.carta, (x, y))
+        pygame.display.flip()
+        reloj.tick(60)
 
 def dibujar_cartas(ancho, alto, hora):
     # Dibuja todas las cartas excepto la última
@@ -111,11 +127,25 @@ def verificar_si_lleno(ite):
             not carta.oculta and carta.simbolo == "K" for carta in reloj[ite])
 
 
-def ganar():
+def mostrar_interfaz_resultado(resultado, respuesta, fondo):
     pantalla.fill(NEGRO)
-    imagen_ganar = pygame.image.load("Sprites/gano.png")
-    imagen_ganar = pygame.transform.scale(imagen_ganar, (ANCHO // 2, ALTO // 2))
-    pantalla.blit(imagen_ganar, ((ANCHO - imagen_ganar.get_width()) // 2, (ALTO - imagen_ganar.get_height()) // 2))
+    imagen_fondo_resultado = pygame.image.load(fondo)
+    imagen_fondo_resultado = pygame.transform.scale(imagen_fondo_resultado, (ANCHO, ALTO))
+    pantalla.blit(imagen_fondo_resultado, (0, 0))
+
+    fuente_resultado = pygame.font.SysFont(None, 72)
+    texto_resultado = fuente_resultado.render(resultado, True, BLANCO)
+    rect_texto_resultado = texto_resultado.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
+    pantalla.blit(texto_resultado, rect_texto_resultado)
+
+    fuente_respuesta = pygame.font.SysFont(None, 48)
+    if pregunta:
+        texto_respuesta = fuente_respuesta.render(f"{respuesta}, {pregunta}", True, BLANCO)
+    else:
+        texto_respuesta = fuente_respuesta.render(respuesta, True, BLANCO)
+    rect_texto_respuesta = texto_respuesta.get_rect(center=(ANCHO // 2, ALTO // 2 + 50))
+    pantalla.blit(texto_respuesta, rect_texto_respuesta)
+
     pygame.display.flip()
     while True:
         for evento in pygame.event.get():
@@ -129,23 +159,12 @@ def ganar():
                 if evento.key == K_r:
                     bucle_principal()
 
+
+def ganar():
+    mostrar_interfaz_resultado("¡Has ganado!", "Si.", "Sprites/gano.png")
 
 def perder():
-    imagen_perder = pygame.image.load("Sprites/perdio.png")
-    imagen_perder = pygame.transform.scale(imagen_perder, (ANCHO // 3.5, ALTO // 3.5))
-    pantalla.blit(imagen_perder, ((ANCHO - imagen_perder.get_width()) // 2, (ALTO - imagen_perder.get_height()) // 2))
-    pygame.display.flip()
-    while True:
-        for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if evento.type == pygame.KEYDOWN:
-                if evento.key == K_x:
-                    pygame.quit()
-                    sys.exit()
-                if evento.key == K_r:
-                    bucle_principal()
+    mostrar_interfaz_resultado("¡Has perdido!", "No", "Sprites/perdio.png")
 
 def bucle_principal():
     barajar_cartas()
@@ -190,6 +209,9 @@ def bucle_principal():
                     if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
                             posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
                             lista_horas[Objetivo.simbolo] == ite):
+                        pos_inicial = (pos[0] - 20, pos[1] - 20)
+                        pos_final = (posicion_hora[ite][0], posicion_hora[ite][1])
+                        animar_movimiento(Objetivo, pos_inicial, pos_final)
                         reloj[ite].append(Objetivo)  # Mover la carta al fondo de la pila
                         reloj[ite][0].mostrar()  # Mostrar la carta superior
                         Objetivo = None
@@ -224,4 +246,145 @@ def bucle_principal():
         pygame.display.flip()
 
 
-bucle_principal()
+def mostrar_menu_principal():
+    fuente_titulo = pygame.font.SysFont(None, 72)
+    fuente_auto = pygame.font.SysFont(None, 36)
+    titulo = fuente_titulo.render("Solitario del Reloj", True, BLANCO)
+    texto_auto = fuente_auto.render("AUTO", True, BLANCO)
+    rect_titulo = titulo.get_rect(center=(ANCHO // 2, ALTO // 2 - 200))
+    rect_texto_auto = texto_auto.get_rect(center=(ANCHO // 2 + 320, ALTO // 2))
+
+    imagen_play = pygame.image.load("Sprites/play_btn.png")
+    imagen_play = pygame.transform.scale(imagen_play, (200, 200))
+    rect_play = imagen_play.get_rect(center=(ANCHO // 2, ALTO // 2))
+
+    imagen_configuracion = pygame.image.load("Sprites/config_btn.png")
+    imagen_configuracion = pygame.transform.scale(imagen_configuracion, (100, 100))
+    rect_configuracion = imagen_configuracion.get_rect(bottomleft=(50, ALTO - 50))
+
+    imagen_estadisticas = pygame.image.load("Sprites/estadistica_btn.png")
+    imagen_estadisticas = pygame.transform.scale(imagen_estadisticas, (100, 100))
+    rect_estadisticas = imagen_estadisticas.get_rect(bottomleft=(200, ALTO - 50))
+
+    switch_automatico = False
+    imagen_switch_on = pygame.image.load("Sprites/switch_on.png")
+    imagen_switch_on = pygame.transform.scale(imagen_switch_on, (130, 50))
+    imagen_switch_off = pygame.image.load("Sprites/switch_off.png")
+    imagen_switch_off = pygame.transform.scale(imagen_switch_off, (130, 50))
+    rect_switch = imagen_switch_off.get_rect(center=(ANCHO // 2 + 200, ALTO // 2))
+
+    imagen_fondo_menu = pygame.image.load("Sprites/fondo_menu.jpg")
+    imagen_fondo_menu = pygame.transform.scale(imagen_fondo_menu, (ANCHO, ALTO))
+
+    while True:
+        pantalla.blit(imagen_fondo_menu, (0, 0))
+        pantalla.blit(titulo, rect_titulo)
+        pantalla.blit(imagen_play, rect_play)
+        pantalla.blit(imagen_configuracion, rect_configuracion)
+        pantalla.blit(imagen_estadisticas, rect_estadisticas)
+        pantalla.blit(texto_auto, rect_texto_auto)
+
+        if switch_automatico:
+            pantalla.blit(imagen_switch_on, rect_switch)
+        else:
+            pantalla.blit(imagen_switch_off, rect_switch)
+
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if rect_play.collidepoint(evento.pos):
+                    mostrar_interfaz_pregunta()
+                elif rect_configuracion.collidepoint(evento.pos):
+                    # Lógica para abrir configuración
+                    pass
+                elif rect_estadisticas.collidepoint(evento.pos):
+                    # Lógica para abrir estadísticas
+                    pass
+                elif rect_switch.collidepoint(evento.pos):
+                    switch_automatico = not switch_automatico
+
+        pygame.display.flip()
+
+
+def mostrar_interfaz_pregunta():
+    global pregunta
+    fuente_pregunta = pygame.font.SysFont(None, 48)
+    fuente_boton = pygame.font.SysFont(None, 36)
+    texto_pregunta = fuente_pregunta.render("DESEA REALIZAR UNA PREGUNTA", True, BLANCO)
+    rect_pregunta = texto_pregunta.get_rect(center=(ANCHO // 2, ALTO // 2 - 100))
+
+    input_box = pygame.Rect(ANCHO // 2 - 200, ALTO // 2, 400, 50)
+    color_inactivo = pygame.Color('lightskyblue3')
+    color_activo = pygame.Color('dodgerblue2')
+    color = color_inactivo
+    activo = False
+    texto = ''
+
+    boton_aceptar = fuente_boton.render("Aceptar", True, BLANCO)
+    rect_aceptar = boton_aceptar.get_rect(center=(ANCHO // 2 - 100, ALTO // 2 + 100))
+
+    boton_no = fuente_boton.render("No", True, BLANCO)
+    rect_no = boton_no.get_rect(center=(ANCHO // 2 + 100, ALTO // 2 + 100))
+
+    imagen_fondo_pregunta = pygame.image.load("Sprites/fondo_pregunta.png")
+    imagen_fondo_pregunta = pygame.transform.scale(imagen_fondo_pregunta, (ANCHO, ALTO))
+
+    while True:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if input_box.collidepoint(evento.pos):
+                    activo = not activo
+                else:
+                    activo = False
+                color = color_activo if activo else color_inactivo
+
+                if rect_aceptar.collidepoint(evento.pos):
+                    if texto.strip() == "":
+                        # Mostrar mensaje de error si el campo de texto está vacío
+                        error_texto = fuente_boton.render("El campo de texto no puede estar vacío", True, pygame.Color('red'))
+                        pantalla.blit(error_texto, (ANCHO // 2 - 200, ALTO // 2 + 200))
+                        pygame.display.flip()
+                        pygame.time.wait(2000)
+                    else:
+                        pregunta = texto
+                        bucle_principal()
+                elif rect_no.collidepoint(evento.pos):
+                    pregunta = ""
+                    bucle_principal()
+
+            if evento.type == pygame.KEYDOWN:
+                if activo:
+                    if evento.key == pygame.K_RETURN:
+                        if texto.strip() == "":
+                            # Mostrar mensaje de error si el campo de texto está vacío
+                            error_texto = fuente_boton.render("El campo de texto no puede estar vacío", True, pygame.Color('red'))
+                            pantalla.blit(error_texto, (ANCHO // 2 - 200, ALTO // 2 + 200))
+                            pygame.display.flip()
+                            pygame.time.wait(2000)
+                        else:
+                            pregunta = texto
+                            bucle_principal()
+                    elif evento.key == pygame.K_BACKSPACE:
+                        texto = texto[:-1]
+                    else:
+                        texto += evento.unicode
+
+        pantalla.blit(imagen_fondo_pregunta, (0, 0))
+        pantalla.blit(texto_pregunta, rect_pregunta)
+        txt_surface = fuente_boton.render(texto, True, color)
+        width = max(400, txt_surface.get_width() + 10)
+        input_box.w = width
+        pantalla.blit(txt_surface, (input_box.x + 5, input_box.y + 5))
+        pygame.draw.rect(pantalla, color, input_box, 2)
+        pantalla.blit(boton_aceptar, rect_aceptar)
+        pantalla.blit(boton_no, rect_no)
+
+        pygame.display.flip()
+
+
+mostrar_menu_principal()
