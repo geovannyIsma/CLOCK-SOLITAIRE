@@ -53,8 +53,8 @@ cargar_imagenes_cartas()
 
 
 def dibujar_cartas(ancho, alto, hora):
-    # Dibuja todas las cartas excepto la última
-    for carta in reloj[hora][:-1]:
+    # Dibuja todas las cartas excepto la última (la carta superior)
+    for carta in reloj[hora][1:]:
         superficie_carta = carta.carta
         rect_carta = superficie_carta.get_rect()
         rect_mitad = pygame.Rect(0, 0, min(cards.carta_atras.get_width(), rect_carta.width),
@@ -63,9 +63,8 @@ def dibujar_cartas(ancho, alto, hora):
         ancho += 12  # Cambia el desplazamiento horizontal a positivo
         alto -= 5  # Cambia el desplazamiento vertical a negativo
 
-    # Dibuja la última carta (la carta superior) al final
+    # Dibuja únicamente la carta superior (si existe)
     if reloj[hora]:
-        pantalla.blit(reloj[hora][-1].carta, (ancho, alto))
         pantalla.blit(reloj[hora][0].carta, (ancho, alto))
 
 
