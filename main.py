@@ -1,254 +1,188 @@
-import pygame
-import random
-import os
-import math
-import time
+import sys, pygame, time, random, os, math
+from pygame.locals import *
+import cards
 
-# Configuración inicial
 pygame.init()
 
+ANCHO, ALTO = 1920, 1080
+ANCHO_CARTA, ALTO_CARTA = 120, 180
+RADIO = 320
 
-class Card:
-    def __init__(self, value, suit):
-        self.value = value
-        self.suit = suit
-        self.key = f"{value}_{suit}"
-        self.back = True
-        self.pos = (0, 0)  # Posición actual
-        self.target_pos = (0, 0)  # Posición objetivo para animación
-        self.moving = False
-        self.angle = 0
+tamaño = ANCHO, ALTO
+pantalla = pygame.display.set_mode(tamaño)
+pygame.display.set_caption("Solitario del Reloj 0.1 beta")
 
-    def flip(self):
-        self.back = False
+BLANCO = (255, 255, 255)
+NEGRO = (0, 0, 0)
 
-    def set_position(self, pos):
-        self.pos = pos
-        self.target_pos = pos
+# Ajusta el centro del reloj para que esté más centrado verticalmente
+CENTRO_X, CENTRO_Y = ANCHO // 2, ALTO // 2 - 100
 
-    def move_to(self, target):
-        self.target_pos = target
-        self.moving = True
+posicion_hora = [
+    (
+        CENTRO_X + RADIO * math.cos(i * (2 * math.pi / 12) - math.pi / 2),
+        CENTRO_Y + RADIO * math.sin(i * (2 * math.pi / 12) - math.pi / 2)
+    )
+    for i in range(12)
+]
+posicion_hora.append((CENTRO_X, CENTRO_Y))
 
-    def update_position(self, speed=0.1):
-        if self.moving:
-            dx = self.target_pos[0] - self.pos[0]
-            dy = self.target_pos[1] - self.pos[1]
-            distance = math.sqrt(dx * dx + dy * dy)
+imagen_fondo = pygame.image.load(os.path.join("Sprites", "fondo.jpg"))
+imagen_fondo = pygame.transform.scale(imagen_fondo, (ANCHO, ALTO))
 
-            if distance < 1:
-                self.pos = self.target_pos
-                self.moving = False
-                return True
+lista_horas = {simbolo: i for i, simbolo in enumerate(['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'])}
 
-            self.pos = (
-                self.pos[0] + dx * speed,
-                self.pos[1] + dy * speed
-            )
-        return False
+def cargar_imagenes_cartas():
+    dir_sprites = "Sprites"
+    for nombre_archivo in os.listdir(dir_sprites):
+        if nombre_archivo.endswith(".png"):
+            nombre, _ = nombre_archivo.split(".")
+            imagen = pygame.image.load(os.path.join(dir_sprites, nombre_archivo))
+            cards.imagenes_cartas[nombre] = pygame.transform.scale(imagen, (ANCHO_CARTA, ALTO_CARTA))
 
+    cards.carta_atras = cards.imagenes_cartas.get("atras", pygame.Surface((ANCHO_CARTA, ALTO_CARTA)))
+    if "atras" not in cards.imagenes_cartas:
+        cards.carta_atras.fill(NEGRO)
 
-class ClockSolitaire:
-    def __init__(self, width, height):
-        self.WIDTH = width
-        self.HEIGHT = height
-        self.CARD_WIDTH = 120
-        self.CARD_HEIGHT = 180
-        self.RADIUS = 320
+cargar_imagenes_cartas()
 
-        self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Clock Solitaire")
+def dibujar_cartas(ancho, alto, hora):
+    # Dibuja todas las cartas excepto la última
+    for carta in reloj[hora][1:]:
+        superficie_carta = carta.carta
+        rect_carta = superficie_carta.get_rect()
+        rect_mitad = pygame.Rect(0, 0, min(cards.carta_atras.get_width(), rect_carta.width), min(cards.carta_atras.get_height(), rect_carta.height))
+        pantalla.blit(superficie_carta.subsurface(rect_mitad), (ancho, alto))
+        ancho -= 12
+        alto += 5
 
-        self.WHITE = (255, 255, 255)
-        self.BLACK = (0, 0, 0)
+    # Dibuja la última carta (la carta superior) al final
+    if reloj[hora]:
+        pantalla.blit(reloj[hora][0].carta, (ancho, alto))
 
-        # Calcular posiciones del reloj
-        self.CLOCK_POSITIONS = [
-            (
-                width // 2 + self.RADIUS * math.cos(i * (2 * math.pi / 12) - math.pi / 2),
-                height // 2 + self.RADIUS * math.sin(i * (2 * math.pi / 12) - math.pi / 2)
-            )
-            for i in range(12)
-        ]
-        self.CENTER_POSITION = (width // 2, height // 2)
+def dibujar_tablero():
+    for i in range(13):
+        dibujar_cartas(posicion_hora[i][0], posicion_hora[i][1], i)
 
-        self.deck = []
-        self.k_hands = {}
-        self.move_count = 0
-        self.current_hand = 13
-        self.game_state = "playing"  # "playing", "won", "lost"
-        self.waiting_for_click = True
-        self.animation_in_progress = False
+def barajar_cartas():
+    random.shuffle(cards.talia)
+    global reloj
+    reloj = [[] for _ in range(13)]
+    for i, carta in enumerate(cards.talia):
+        reloj[i // 4].append(carta)
+        carta.ocultar()
+    reloj[12][0].mostrar()
+    global hora_llena
+    hora_llena = [False] * 13
 
-        self.card_images = {}
-        self.card_back = None
-        self.background = None
+def verificar_si_lleno(ite):
+    if ite != 12:
+        hora_llena[ite] = len(reloj[ite]) == 4 and all(not carta.oculta for carta in reloj[ite])
+    else:
+        hora_llena[ite] = len(reloj[ite]) == 4 and all(not carta.oculta and carta.simbolo == "K" for carta in reloj[ite])
 
-        self.load_assets()
-        self.initialize_game()
+def ganar():
+    pantalla.fill(NEGRO)
+    imagen_ganar = pygame.image.load("Sprites/gano.png")
+    imagen_ganar = pygame.transform.scale(imagen_ganar, (ANCHO // 2, ALTO // 2))
+    pantalla.blit(imagen_ganar, ((ANCHO - imagen_ganar.get_width()) // 2, (ALTO - imagen_ganar.get_height()) // 2))
+    pygame.display.flip()
+    while True:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == K_x:
+                    pygame.quit()
+                    sys.exit()
+                if evento.key == K_r:
+                    bucle_principal()
 
-    def load_assets(self):
-        # Cargar imágenes
-        sprites_dir = "Sprites"
-        for file_name in os.listdir(sprites_dir):
-            if file_name.endswith(".png"):
-                name = file_name[:-4]
-                image = pygame.image.load(os.path.join(sprites_dir, file_name))
-                self.card_images[name] = pygame.transform.scale(
-                    image, (self.CARD_WIDTH, self.CARD_HEIGHT)
-                )
+def perder():
+    pantalla.fill(NEGRO)
+    imagen_perder = pygame.image.load("Sprites/perdio.png")
+    imagen_perder = pygame.transform.scale(imagen_perder, (ANCHO // 2, ALTO // 2))
+    pantalla.blit(imagen_perder, ((ANCHO - imagen_perder.get_width()) // 2, (ALTO - imagen_perder.get_height()) // 2))
+    pygame.display.flip()
+    while True:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == K_x:
+                    pygame.quit()
+                    sys.exit()
+                if evento.key == K_r:
+                    bucle_principal()
+def bucle_principal():
+    barajar_cartas()
+    perdido = False
+    atrapado = False
+    Objetivo = None
+    pos_temp = None
 
-        self.card_back = self.card_images.get("atras")
-        self.background = pygame.transform.scale(
-            pygame.image.load(os.path.join("Sprites", "fondo.jpg")),
-            (self.WIDTH, self.HEIGHT)
-        )
+    while True:
+        pantalla.blit(imagen_fondo, (0, 0))
+        pos = pygame.mouse.get_pos()
+        tecla = pygame.key.get_pressed()
 
-    def initialize_game(self):
-        # Inicializar mazo
-        suits = ['brillo', 'trebol', 'corazon_negro', 'corazon_rojo']
-        values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K']
-
-        self.deck = [Card(v, s) for s in suits for v in values]
-        self.shuffle()
-        self.deal_cards()
-
-    def shuffle(self):
-        for _ in range(9):
-            mitad = len(self.deck) // 2
-            temp_deck = []
-            left = self.deck[:mitad]
-            right = self.deck[mitad:]
-
-            while left or right:
-                for _ in range(random.randint(1, 5)):
-                    if left:
-                        temp_deck.append(left.pop(0))
-                for _ in range(random.randint(1, 5)):
-                    if right:
-                        temp_deck.append(right.pop(0))
-
-            self.deck = temp_deck
-
-    def deal_cards(self):
-        self.k_hands.clear()
-        for i in range(1, 14):
-            hand = []
-            pos = self.CENTER_POSITION if i == 13 else self.CLOCK_POSITIONS[i - 1]
-            angle = 0 if i == 13 else ((i - 1) * -30)
-
-            for _ in range(4):
-                if self.deck:
-                    card = self.deck.pop(0)
-                    card.set_position(pos)
-                    card.angle = angle
-                    hand.append(card)
-            self.k_hands[i] = hand
-
-    def get_hand_index(self, value):
-        hand_indices = {
-            'A': 1, '2': 2, '3': 3, '4': 4, '5': 5,
-            '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10,
-            'J': 11, 'Q': 12, 'K': 13
-        }
-        return hand_indices.get(value, 1)
-
-    def verify_win(self):
-        return self.move_count >= 52
-
-    def verify_lost(self):
-        if not self.k_hands.get(13):
-            return False
-        return all(card.back for card in self.k_hands[13] if card.value == 'K')
-
-    def make_move(self):
-        if self.game_state != "playing" or not self.k_hands[self.current_hand]:
-            return False
-
-        card = self.k_hands[self.current_hand][0]
-        card.flip()
-        next_hand = self.get_hand_index(card.value)
-
-        # Establecer posición objetivo para la animación
-        target_pos = self.CENTER_POSITION if next_hand == 13 else self.CLOCK_POSITIONS[next_hand - 1]
-        target_angle = 0 if next_hand == 13 else ((next_hand - 1) * -30)
-
-        card.move_to(target_pos)
-        card.angle = target_angle
-
-        # Mover la carta a la nueva mano
-        self.k_hands[next_hand].append(card)
-        self.k_hands[self.current_hand].pop(0)
-
-        self.move_count += 1
-        self.current_hand = next_hand
-        self.animation_in_progress = True
-
-        # Verificar condiciones de victoria/derrota
-        if self.verify_win():
-            self.game_state = "won"
-        elif self.verify_lost():
-            self.game_state = "lost"
-
-        return True
-
-    def draw_card(self, card, pos, angle=0):
-        image = self.card_images[card.key] if not card.back else self.card_back
-        rotated = pygame.transform.rotate(image, angle)
-        rect = rotated.get_rect(center=pos)
-        self.screen.blit(rotated, rect)
-
-    def draw(self):
-        self.screen.blit(self.background, (0, 0))
-
-        # Dibujar todas las cartas en cada mano
-        for hand_index, hand in self.k_hands.items():
-            for card in hand:
-                self.draw_card(card, card.pos, card.angle)
-
-        # Dibujar estado del juego
-        font = pygame.font.Font(None, 74)
-        if self.game_state == "won":
-            text = font.render("¡Ganaste!", True, self.WHITE)
-        elif self.game_state == "lost":
-            text = font.render("¡Perdiste!", True, self.WHITE)
+        if not perdido:
+            dibujar_tablero()
         else:
-            text = font.render(f"Movimientos: {self.move_count}", True, self.WHITE)
+            perder()
 
-        self.screen.blit(text, (20, 20))
+        if all(hora_llena):
+            ganar()
 
-    def update(self):
-        if self.animation_in_progress:
-            self.animation_in_progress = any(
-                card.update_position() for hand in self.k_hands.values() for card in hand
-            )
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                for ite in range(13):
+                    if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
+                            posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
+                            not reloj[ite][0].oculta and not hora_llena[ite]):
+                        Objetivo = reloj[ite].pop(0)
+                        pos_temp = ite
+                        atrapado = True
+                        verificar_si_lleno(ite)
+                        break
+                else:
+                    atrapado = False
+            if evento.type == pygame.MOUSEBUTTONUP and atrapado:
+                for ite in range(13):
+                    if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
+                            posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
+                            lista_horas[Objetivo.simbolo] == ite):
+                        reloj[ite].append(Objetivo)
+                        reloj[ite][0].mostrar()
+                        Objetivo = None
+                        verificar_si_lleno(ite)
+                        if hora_llena[ite] and ite != 12:
+                            for i in range(ite, 13):
+                                if i >= 12:
+                                    i -= 12
+                                reloj[i + 1][0].mostrar()
+                        elif hora_llena[ite] and ite == 12:
+                            perdido = True
+                        break
+                else:
+                    if pos_temp is not None:
+                        reloj[pos_temp].insert(0, Objetivo)
+                        hora_llena[pos_temp] = False
+                        Objetivo = None
+                        pos_temp = None
 
-    def handle_click(self, pos):
-        if not self.animation_in_progress and self.waiting_for_click:
-            self.waiting_for_click = False
-            return self.make_move()
-        return False
+        if tecla[K_ESCAPE]:
+            pygame.quit()
+            sys.exit()
 
+        if atrapado and Objetivo:
+            pantalla.blit(Objetivo.carta, (pos[0] - 20, pos[1] - 20))
 
-def main():
-    game = ClockSolitaire(1920, 1080)
-    clock = pygame.time.Clock()
-    running = True
-
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                game.handle_click(event.pos)
-
-        game.update()
-        game.draw()
         pygame.display.flip()
-        clock.tick(60)
 
-    pygame.quit()
-
-
-if __name__ == "__main__":
-    main()
+bucle_principal()
