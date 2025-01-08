@@ -54,7 +54,7 @@ cargar_imagenes_cartas()
 
 def dibujar_cartas(ancho, alto, hora):
     # Dibuja todas las cartas excepto la última
-    for carta in reloj[hora][:-1]:
+    for carta in reloj[hora][:1]:
         superficie_carta = carta.carta
         rect_carta = superficie_carta.get_rect()
         rect_mitad = pygame.Rect(0, 0, min(cards.carta_atras.get_width(), rect_carta.width),
@@ -65,7 +65,6 @@ def dibujar_cartas(ancho, alto, hora):
 
     # Dibuja la última carta (la carta superior) al final
     if reloj[hora]:
-        pantalla.blit(reloj[hora][-1].carta, (ancho, alto))
         pantalla.blit(reloj[hora][0].carta, (ancho, alto))
 
 
@@ -132,9 +131,8 @@ def ganar():
 
 
 def perder():
-    pantalla.fill(NEGRO)
     imagen_perder = pygame.image.load("Sprites/perdio.png")
-    imagen_perder = pygame.transform.scale(imagen_perder, (ANCHO // 2, ALTO // 2))
+    imagen_perder = pygame.transform.scale(imagen_perder, (ANCHO // 3.5, ALTO // 3.5))
     pantalla.blit(imagen_perder, ((ANCHO - imagen_perder.get_width()) // 2, (ALTO - imagen_perder.get_height()) // 2))
     pygame.display.flip()
     while True:
@@ -155,6 +153,8 @@ def bucle_principal():
     atrapado = False
     Objetivo = None
     pos_temp = None
+    movimientos = 0
+    fuente = pygame.font.SysFont(None, 36)
 
     while True:
         pantalla.blit(imagen_fondo, (0, 0))
@@ -194,6 +194,7 @@ def bucle_principal():
                         reloj[ite][0].mostrar()
                         Objetivo = None
                         verificar_si_lleno(ite)
+                        movimientos += 1  # Incrementar el contador de movimientos
                         if hora_llena[ite] and ite != 12:
                             for i in range(ite, 13):
                                 if i >= 12:
@@ -215,6 +216,10 @@ def bucle_principal():
 
         if atrapado and Objetivo:
             pantalla.blit(Objetivo.carta, (pos[0] - 20, pos[1] - 20))
+
+        # Dibujar el contador de movimientos
+        texto_movimientos = fuente.render(f"Movimientos: {movimientos}", True, BLANCO)
+        pantalla.blit(texto_movimientos, (150, 10))
 
         pygame.display.flip()
 
