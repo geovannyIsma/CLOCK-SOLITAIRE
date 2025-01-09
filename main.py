@@ -41,6 +41,10 @@ pygame.mixer.init()
 sonido_barajear = pygame.mixer.Sound("Sprites/sounds/shuffling-cards-2.wav")
 sonido_repartir = pygame.mixer.Sound("Sprites/sounds/repartir.mp3")
 
+pygame.mixer.music.load("Sprites/sounds/musica_fondo.mp3")
+pygame.mixer.music.play(-1)  # -1 para que la música se reproduzca en bucle
+pygame.mixer.music.set_volume(0.2)  # Ajusta el volumen al 50%
+
 def cargar_imagenes_cartas():
     dir_sprites = "Sprites"
     for nombre_archivo in os.listdir(dir_sprites):
@@ -176,6 +180,11 @@ def barajar_cartas():
     animar_barajeo(cards.talia)  # Anima el barajeo inicial
     for _ in range(10):  # Realizar el barajeo americano 10 veces
         cards.talia = barajeo_americano(cards.talia)
+
+    for i, carta in enumerate(cards.talia):
+        reloj[i // 4].append(carta)
+        carta.ocultar()
+    reloj[12][0].mostrar()
 
     # Reparte las cartas con animación
     repartir_cartas(cards.talia)
