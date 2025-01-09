@@ -37,6 +37,10 @@ lista_horas = {simbolo: i for i, simbolo in
                enumerate(['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'])}
 
 
+pygame.mixer.init()
+sonido_barajear = pygame.mixer.Sound("Sprites/sounds/shuffling-cards-2.wav")
+sonido_repartir = pygame.mixer.Sound("Sprites/sounds/repartir.mp3")
+
 def cargar_imagenes_cartas():
     dir_sprites = "Sprites"
     for nombre_archivo in os.listdir(dir_sprites):
@@ -52,6 +56,64 @@ def cargar_imagenes_cartas():
 
 cargar_imagenes_cartas()
 
+
+def animar_barajeo(mazo, duracion=2000):
+    reloj = pygame.time.Clock()
+    tiempo_inicial = pygame.time.get_ticks()
+    pos_centro_abajo = (CENTRO_X, ALTO - ALTO_CARTA // 2)
+
+    # Reproducir sonido de barajear
+    sonido_barajear.play()
+
+    while True:
+        tiempo_actual = pygame.time.get_ticks()
+        tiempo_transcurrido = tiempo_actual - tiempo_inicial
+        if tiempo_transcurrido >= duracion:
+            break
+        pantalla.blit(imagen_fondo, (0, 0))
+        for i, carta in enumerate(mazo):
+            t = tiempo_transcurrido / duracion
+            x = pos_centro_abajo[0] + (random.random() - 0.5) * 200 * (1 - t)
+            y = pos_centro_abajo[1] + (random.random() - 0.5) * 200 * (1 - t)
+            pantalla.blit(carta.carta, (x, y))
+        pygame.display.flip()
+        reloj.tick(60)
+
+    # Dibujar las cartas en el centro al final de la animación de barajear
+    pantalla.blit(imagen_fondo, (0, 0))
+    for carta in mazo:
+        pantalla.blit(carta.carta, pos_centro_abajo)
+    pygame.display.flip()
+
+def repartir_cartas(mazo, duracion=250):
+    global reloj
+    reloj = [[] for _ in range(13)]  # Reinicia las pilas del reloj
+    pos_centro_abajo = (CENTRO_X, ALTO - ALTO_CARTA // 2)
+
+    # Dibujar las cartas en el centro antes de comenzar la animación de repartir
+    pantalla.blit(imagen_fondo, (0, 0))
+    for carta in mazo:
+        pantalla.blit(carta.carta, pos_centro_abajo)
+    pygame.display.flip()
+
+    for i, carta in enumerate(mazo):
+        pila_destino = i % 13  # Calcula a cuál pila pertenece la carta
+        pos_final = posicion_hora[pila_destino]
+
+        # Anima el movimiento de la carta desde el centro hacia su posición final
+        animar_movimiento(carta, pos_centro_abajo, pos_final, duracion=duracion)
+
+        # Reproducir sonido de repartir
+        sonido_repartir.play()
+
+        # Agrega la carta a la pila correspondiente
+        reloj[pila_destino].append(carta)
+        carta.ocultar()  # Oculta la carta inicialmente
+
+    # Muestra la carta superior en la posición 12
+    if reloj[12]:
+        reloj[12][0].mostrar()
+
 def animar_movimiento(carta, pos_inicial, pos_final, duracion=250):
     reloj = pygame.time.Clock()
     tiempo_inicial = pygame.time.get_ticks()
@@ -63,9 +125,10 @@ def animar_movimiento(carta, pos_inicial, pos_final, duracion=250):
         t = tiempo_transcurrido / duracion
         x = pos_inicial[0] + t * (pos_final[0] - pos_inicial[0])
         y = pos_inicial[1] + t * (pos_final[1] - pos_inicial[1])
-        pantalla.blit(imagen_fondo, (0, 0))
-        dibujar_tablero()
-        pantalla.blit(carta.carta, (x, y))
+
+        pantalla.blit(imagen_fondo, (0, 0))  # Redibuja el fondo
+        dibujar_tablero()  # Redibuja el tablero con las cartas actuales
+        pantalla.blit(carta.carta, (x, y))  # Dibuja la carta en su posición actual
         pygame.display.flip()
         reloj.tick(60)
 
@@ -109,13 +172,15 @@ def barajeo_americano(mazo):
 
 def barajar_cartas():
     global reloj
-    reloj = [[] for _ in range(13)]
+    reloj = [[] for _ in range(13)]  # Inicializa las pilas del reloj
+    animar_barajeo(cards.talia)  # Anima el barajeo inicial
     for _ in range(10):  # Realizar el barajeo americano 10 veces
         cards.talia = barajeo_americano(cards.talia)
-    for i, carta in enumerate(cards.talia):
-        reloj[i // 4].append(carta)
-        carta.ocultar()
-    reloj[12][0].mostrar()
+
+    # Reparte las cartas con animación
+    repartir_cartas(cards.talia)
+
+    # Inicializa las pilas como no llenas
     global hora_llena
     hora_llena = [False] * 13
 
@@ -140,7 +205,7 @@ def mostrar_interfaz_resultado(resultado, estado, fondo):
     texto_resultado = fuente_resultado.render(resultado, True, BLANCO)
     rect_texto_resultado = texto_resultado.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
     pantalla.blit(texto_resultado, rect_texto_resultado)
-    #respuesta = generar_respuesta(pregunta, estado)
+    # respuesta = generar_respuesta(pregunta, estado)
     respuesta = "respuesta"
     fuente_respuesta = pygame.font.SysFont(None, 35)
     if pregunta:
@@ -409,7 +474,8 @@ def mostrar_interfaz_pregunta():
                 if rect_aceptar.collidepoint(evento.pos):
                     if texto.strip() == "":
                         # Mostrar mensaje de error si el campo de texto está vacío
-                        error_texto = fuente_boton.render("El campo de texto no puede estar vacío", True, pygame.Color('red'))
+                        error_texto = fuente_boton.render("El campo de texto no puede estar vacío", True,
+                                                          pygame.Color('red'))
                         pantalla.blit(error_texto, (ANCHO // 2 - 200, ALTO // 2 + 200))
                         pygame.display.flip()
                         pygame.time.wait(2000)
@@ -425,7 +491,8 @@ def mostrar_interfaz_pregunta():
                     if evento.key == pygame.K_RETURN:
                         if texto.strip() == "":
                             # Mostrar mensaje de error si el campo de texto está vacío
-                            error_texto = fuente_boton.render("El campo de texto no puede estar vacío", True, pygame.Color('red'))
+                            error_texto = fuente_boton.render("El campo de texto no puede estar vacío", True,
+                                                              pygame.Color('red'))
                             pantalla.blit(error_texto, (ANCHO // 2 - 200, ALTO // 2 + 200))
                             pygame.display.flip()
                             pygame.time.wait(2000)
