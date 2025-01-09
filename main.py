@@ -2,6 +2,7 @@ import sys, pygame, os, math
 from pygame.locals import *
 import cards
 import random
+from openai import OpenAI
 
 pygame.init()
 
@@ -127,8 +128,10 @@ def verificar_si_lleno(ite):
             not carta.oculta and carta.simbolo == "K" for carta in reloj[ite])
 
 
-def mostrar_interfaz_resultado(resultado, respuesta, fondo):
+def mostrar_interfaz_resultado(resultado, estado, fondo):
     pantalla.fill(NEGRO)
+
+
     imagen_fondo_resultado = pygame.image.load(fondo)
     imagen_fondo_resultado = pygame.transform.scale(imagen_fondo_resultado, (ANCHO, ALTO))
     pantalla.blit(imagen_fondo_resultado, (0, 0))
@@ -137,10 +140,12 @@ def mostrar_interfaz_resultado(resultado, respuesta, fondo):
     texto_resultado = fuente_resultado.render(resultado, True, BLANCO)
     rect_texto_resultado = texto_resultado.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
     pantalla.blit(texto_resultado, rect_texto_resultado)
-
-    fuente_respuesta = pygame.font.SysFont(None, 48)
+    #respuesta = generar_respuesta(pregunta, estado)
+    respuesta = "respuesta"
+    fuente_respuesta = pygame.font.SysFont(None, 35)
     if pregunta:
-        texto_respuesta = fuente_respuesta.render(f"{respuesta}, {pregunta}", True, BLANCO)
+        texto_respuesta = fuente_respuesta.render(f"{respuesta}", True, BLANCO)
+
     else:
         texto_respuesta = fuente_respuesta.render(respuesta, True, BLANCO)
     rect_texto_respuesta = texto_respuesta.get_rect(center=(ANCHO // 2, ALTO // 2 + 50))
@@ -159,12 +164,11 @@ def mostrar_interfaz_resultado(resultado, respuesta, fondo):
                 if evento.key == K_r:
                     bucle_principal()
 
-
 def ganar():
-    mostrar_interfaz_resultado("¡Has ganado!", "Si.", "Sprites/gano.png")
+    mostrar_interfaz_resultado("¡Has ganado!", "positiva","Sprites/gano.png")
 
 def perder():
-    mostrar_interfaz_resultado("¡Has perdido!", "No", "Sprites/perdio.png")
+    mostrar_interfaz_resultado("¡Has perdido!", "negativa", "Sprites/perdio.png")
 
 def bucle_principal():
     barajar_cartas()
@@ -174,79 +178,141 @@ def bucle_principal():
     pos_temp = None
     movimientos = 0
     fuente = pygame.font.SysFont(None, 36)
+    global switch_automatico
+    duracion_automatica = 1000  # Adjust this value to change the speed of the transitions
+    if switch_automatico:
+        while True:
+            pantalla.blit(imagen_fondo, (0, 0))
+            tecla = pygame.key.get_pressed()
 
-    while True:
-        pantalla.blit(imagen_fondo, (0, 0))
-        pos = pygame.mouse.get_pos()
-        tecla = pygame.key.get_pressed()
+            if not perdido:
+                dibujar_tablero()
+            else:
+                perder()
 
-        if not perdido:
-            dibujar_tablero()
-        else:
-            perder()
+            if all(hora_llena):
+                ganar()
 
-        if all(hora_llena):
-            ganar()
+            for evento in pygame.event.get():
+                if evento.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
 
-        for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if evento.type == pygame.MOUSEBUTTONDOWN:
+            if not atrapado:
                 for ite in range(13):
-                    if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
-                            posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
-                            not reloj[ite][0].oculta and not hora_llena[ite]):
+                    if not reloj[ite][0].oculta and not hora_llena[ite]:
+                        if ite == 12 and len(reloj[12]) >= 3 and all(carta.simbolo == "K" for carta in reloj[12]):
+                            continue
                         Objetivo = reloj[ite].pop(0)
                         pos_temp = ite
-                        atrapado = True
                         verificar_si_lleno(ite)
+                        for j in range(13):
+                            if lista_horas[Objetivo.simbolo] == j:
+                                pos_inicial = (posicion_hora[ite][0], posicion_hora[ite][1])
+                                pos_final = (posicion_hora[j][0], posicion_hora[j][1])
+                                animar_movimiento(Objetivo, pos_inicial, pos_final, duracion=duracion_automatica)
+                                reloj[j].append(Objetivo)
+                                reloj[j][0].mostrar()
+                                verificar_si_lleno(j)
+                                movimientos += 1
+                                if hora_llena[j] and j != 12:
+                                    for k in range(j, 13):
+                                        if k >= 12:
+                                            k -= 12
+                                        reloj[k + 1][0].mostrar()
+                                elif hora_llena[j] and j == 12:
+                                    perdido = True
+                                break
                         break
-                else:
-                    atrapado = False
-            if evento.type == pygame.MOUSEBUTTONUP and atrapado:
-                for ite in range(13):
-                    if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
-                            posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
-                            lista_horas[Objetivo.simbolo] == ite):
-                        pos_inicial = (pos[0] - 20, pos[1] - 20)
-                        pos_final = (posicion_hora[ite][0], posicion_hora[ite][1])
-                        animar_movimiento(Objetivo, pos_inicial, pos_final)
-                        reloj[ite].append(Objetivo)  # Mover la carta al fondo de la pila
-                        reloj[ite][0].mostrar()  # Mostrar la carta superior
-                        Objetivo = None
-                        verificar_si_lleno(ite)
-                        movimientos += 1  # Incrementar el contador de movimientos
-                        if hora_llena[ite] and ite != 12:
-                            for i in range(ite, 13):
-                                if i >= 12:
-                                    i -= 12
-                                reloj[i + 1][0].mostrar()
-                        elif hora_llena[ite] and ite == 12:
-                            perdido = True
-                        break
-                else:
-                    if pos_temp is not None:
-                        reloj[pos_temp].insert(0, Objetivo)
-                        hora_llena[pos_temp] = False
-                        Objetivo = None
-                        pos_temp = None
 
-        if tecla[K_ESCAPE]:
-            pygame.quit()
-            sys.exit()
+            if tecla[K_ESCAPE]:
+                pygame.quit()
+                sys.exit()
 
-        if atrapado and Objetivo:
-            pantalla.blit(Objetivo.carta, (pos[0] - 20, pos[1] - 20))
+            # Dibujar el contador de movimientos
+            texto_movimientos = fuente.render(f"Movimientos: {movimientos}", True, BLANCO)
+            pantalla.blit(texto_movimientos, (150, 10))
 
-        # Dibujar el contador de movimientos
-        texto_movimientos = fuente.render(f"Movimientos: {movimientos}", True, BLANCO)
-        pantalla.blit(texto_movimientos, (150, 10))
+    else:
+        while True:
+            pantalla.blit(imagen_fondo, (0, 0))
+            pos = pygame.mouse.get_pos()
+            tecla = pygame.key.get_pressed()
 
-        pygame.display.flip()
+            if not perdido:
+                dibujar_tablero()
+            else:
+                perder()
 
+            if all(hora_llena):
+                ganar()
+
+            for evento in pygame.event.get():
+                if evento.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if evento.type == pygame.MOUSEBUTTONDOWN:
+                    for ite in range(13):
+                        if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
+                                posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
+                                not reloj[ite][0].oculta and not hora_llena[ite]):
+                            # Verificar si la pila de los 13 ya tiene 3 cartas de valor 13
+                            if ite == 12 and len(reloj[12]) >= 3 and all(carta.simbolo == "K" for carta in reloj[12]):
+                                continue
+                            Objetivo = reloj[ite].pop(0)
+                            pos_temp = ite
+                            atrapado = True
+                            verificar_si_lleno(ite)
+                            break
+                    else:
+                        atrapado = False
+                if evento.type == pygame.MOUSEBUTTONUP and atrapado:
+                    for ite in range(13):
+                        if (posicion_hora[ite][0] <= pos[0] <= posicion_hora[ite][0] + ANCHO_CARTA and
+                                posicion_hora[ite][1] <= pos[1] <= posicion_hora[ite][1] + ALTO_CARTA and
+                                lista_horas[Objetivo.simbolo] == ite):
+                            pos_inicial = (pos[0] - 20, pos[1] - 20)
+                            pos_final = (posicion_hora[ite][0], posicion_hora[ite][1])
+                            animar_movimiento(Objetivo, pos_inicial, pos_final)
+                            reloj[ite].append(Objetivo)  # Mover la carta al fondo de la pila
+                            reloj[ite][0].mostrar()  # Mostrar la carta superior
+                            Objetivo = None
+                            verificar_si_lleno(ite)
+                            movimientos += 1  # Incrementar el contador de movimientos
+                            if hora_llena[ite] and ite != 12:
+                                for i in range(ite, 13):
+                                    if i >= 12:
+                                        i -= 12
+                                    reloj[i + 1][0].mostrar()
+                            elif hora_llena[ite] and ite == 12:
+                                perdido = True
+                            break
+                    else:
+                        if pos_temp is not None:
+                            reloj[pos_temp].insert(0, Objetivo)
+                            hora_llena[pos_temp] = False
+                            Objetivo = None
+                            pos_temp = None
+
+            if tecla[K_ESCAPE]:
+                pygame.quit()
+                sys.exit()
+
+            if atrapado and Objetivo:
+                pantalla.blit(Objetivo.carta, (pos[0] - 20, pos[1] - 20))
+
+            # Dibujar el contador de movimientos
+            texto_movimientos = fuente.render(f"Movimientos: {movimientos}", True, BLANCO)
+            pantalla.blit(texto_movimientos, (150, 10))
+
+            pygame.display.flip()
+
+
+# Declare switch_automatico as a global variable
+switch_automatico = False
 
 def mostrar_menu_principal():
+    global switch_automatico
     fuente_titulo = pygame.font.SysFont(None, 72)
     fuente_auto = pygame.font.SysFont(None, 36)
     titulo = fuente_titulo.render("Solitario del Reloj", True, BLANCO)
@@ -266,7 +332,6 @@ def mostrar_menu_principal():
     imagen_estadisticas = pygame.transform.scale(imagen_estadisticas, (100, 100))
     rect_estadisticas = imagen_estadisticas.get_rect(bottomleft=(200, ALTO - 50))
 
-    switch_automatico = False
     imagen_switch_on = pygame.image.load("Sprites/switch_on.png")
     imagen_switch_on = pygame.transform.scale(imagen_switch_on, (130, 50))
     imagen_switch_off = pygame.image.load("Sprites/switch_off.png")
@@ -306,13 +371,11 @@ def mostrar_menu_principal():
                     switch_automatico = not switch_automatico
 
         pygame.display.flip()
-
-
 def mostrar_interfaz_pregunta():
     global pregunta
     fuente_pregunta = pygame.font.SysFont(None, 48)
     fuente_boton = pygame.font.SysFont(None, 36)
-    texto_pregunta = fuente_pregunta.render("DESEA REALIZAR UNA PREGUNTA", True, BLANCO)
+    texto_pregunta = fuente_pregunta.render("¿DESEA REALIZAR UNA PREGUNTA?", True, BLANCO)
     rect_pregunta = texto_pregunta.get_rect(center=(ANCHO // 2, ALTO // 2 - 100))
 
     input_box = pygame.Rect(ANCHO // 2 - 200, ALTO // 2, 400, 50)
@@ -325,7 +388,7 @@ def mostrar_interfaz_pregunta():
     boton_aceptar = fuente_boton.render("Aceptar", True, BLANCO)
     rect_aceptar = boton_aceptar.get_rect(center=(ANCHO // 2 - 100, ALTO // 2 + 100))
 
-    boton_no = fuente_boton.render("No", True, BLANCO)
+    boton_no = fuente_boton.render("No, gracias", True, BLANCO)
     rect_no = boton_no.get_rect(center=(ANCHO // 2 + 100, ALTO // 2 + 100))
 
     imagen_fondo_pregunta = pygame.image.load("Sprites/fondo_pregunta.png")
