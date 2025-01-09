@@ -222,13 +222,13 @@ def mostrar_interfaz_resultado(resultado, estado, fondo):
     imagen_fondo_resultado = pygame.transform.scale(imagen_fondo_resultado, (ANCHO, ALTO))
     pantalla.blit(imagen_fondo_resultado, (0, 0))
 
-    fuente_resultado = pygame.font.SysFont(None, 72)
+    fuente_resultado = pygame.font.Font("Sprites/Fonts/Casino3DFilledMarquee.ttf", 80)
     texto_resultado = fuente_resultado.render(resultado, True, BLANCO)
     rect_texto_resultado = texto_resultado.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
     pantalla.blit(texto_resultado, rect_texto_resultado)
     # respuesta = generar_respuesta(pregunta, estado)
     respuesta = "respuesta"
-    fuente_respuesta = pygame.font.SysFont(None, 35)
+    fuente_respuesta = pygame.font.Font("Sprites/Fonts/Casino3DFilledMarquee.ttf", 36)
     if pregunta:
         texto_respuesta = fuente_respuesta.render(f"{respuesta}", True, BLANCO)
     else:
@@ -274,9 +274,11 @@ def bucle_principal():
                 dibujar_tablero()
             else:
                 perder()
+                break  # Salir del bucle si se ha perdido
 
             if all(hora_llena):
                 ganar()
+                break  # Salir del bucle si se ha ganado
 
             for evento in pygame.event.get():
                 if evento.type == pygame.QUIT:
@@ -328,9 +330,11 @@ def bucle_principal():
                 dibujar_tablero()
             else:
                 perder()
+                break  # Salir del bucle si se ha perdido
 
             if all(hora_llena):
                 ganar()
+                break  # Salir del bucle si se ha ganado
 
             for evento in pygame.event.get():
                 if evento.type == pygame.QUIT:
@@ -403,7 +407,7 @@ def mostrar_menu_principal():
     for carta in cards.talia:
         carta.ocultar()
 
-    fuente_titulo = pygame.font.SysFont(None, 72)
+    fuente_titulo = pygame.font.Font("Sprites/Fonts/Casino3DFilledMarquee.ttf", 100)
     fuente_auto = pygame.font.SysFont(None, 36)
     titulo = fuente_titulo.render("Solitario del Reloj", True, BLANCO)
     texto_auto = fuente_auto.render("AUTO", True, BLANCO)
