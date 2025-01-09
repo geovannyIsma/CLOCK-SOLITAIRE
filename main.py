@@ -64,7 +64,11 @@ cargar_imagenes_cartas()
 def animar_barajeo(mazo, duracion=2000):
     reloj = pygame.time.Clock()
     tiempo_inicial = pygame.time.get_ticks()
+    pos_centro_arriba = (CENTRO_X, ALTO // 4)
     pos_centro_abajo = (CENTRO_X, ALTO - ALTO_CARTA // 2)
+    mitad = len(mazo) // 2
+    izquierda = mazo[:mitad]
+    derecha = mazo[mitad:]
 
     # Reproducir sonido de barajear
     sonido_barajear.play()
@@ -74,12 +78,21 @@ def animar_barajeo(mazo, duracion=2000):
         tiempo_transcurrido = tiempo_actual - tiempo_inicial
         if tiempo_transcurrido >= duracion:
             break
+        t = tiempo_transcurrido / duracion
         pantalla.blit(imagen_fondo, (0, 0))
-        for i, carta in enumerate(mazo):
-            t = tiempo_transcurrido / duracion
-            x = pos_centro_abajo[0] + (random.random() - 0.5) * 200 * (1 - t)
-            y = pos_centro_abajo[1] + (random.random() - 0.5) * 200 * (1 - t)
+
+        # Animar las cartas del montículo izquierdo
+        for i, carta in enumerate(izquierda):
+            x = pos_centro_arriba[0] - 50 * (1 - t) + (random.random() - 0.5) * 20
+            y = pos_centro_arriba[1] + (pos_centro_abajo[1] - pos_centro_arriba[1]) * t + (random.random() - 0.5) * 20
             pantalla.blit(carta.carta, (x, y))
+
+        # Animar las cartas del montículo derecho
+        for i, carta in enumerate(derecha):
+            x = pos_centro_arriba[0] + 50 * (1 - t) + (random.random() - 0.5) * 20
+            y = pos_centro_arriba[1] + (pos_centro_abajo[1] - pos_centro_arriba[1]) * t + (random.random() - 0.5) * 20
+            pantalla.blit(carta.carta, (x, y))
+
         pygame.display.flip()
         reloj.tick(60)
 
@@ -205,7 +218,6 @@ def verificar_si_lleno(ite):
 def mostrar_interfaz_resultado(resultado, estado, fondo):
     pantalla.fill(NEGRO)
 
-
     imagen_fondo_resultado = pygame.image.load(fondo)
     imagen_fondo_resultado = pygame.transform.scale(imagen_fondo_resultado, (ANCHO, ALTO))
     pantalla.blit(imagen_fondo_resultado, (0, 0))
@@ -219,7 +231,6 @@ def mostrar_interfaz_resultado(resultado, estado, fondo):
     fuente_respuesta = pygame.font.SysFont(None, 35)
     if pregunta:
         texto_respuesta = fuente_respuesta.render(f"{respuesta}", True, BLANCO)
-
     else:
         texto_respuesta = fuente_respuesta.render(respuesta, True, BLANCO)
     rect_texto_respuesta = texto_respuesta.get_rect(center=(ANCHO // 2, ALTO // 2 + 50))
@@ -236,7 +247,7 @@ def mostrar_interfaz_resultado(resultado, estado, fondo):
                     pygame.quit()
                     sys.exit()
                 if evento.key == K_r:
-                    bucle_principal()
+                    mostrar_menu_principal()
 
 def ganar():
     mostrar_interfaz_resultado("¡Has ganado!", "positiva","Sprites/gano.png")
@@ -387,6 +398,11 @@ switch_automatico = False
 
 def mostrar_menu_principal():
     global switch_automatico
+
+    # Ocultar todas las cartas antes de mostrar el menú principal
+    for carta in cards.talia:
+        carta.ocultar()
+
     fuente_titulo = pygame.font.SysFont(None, 72)
     fuente_auto = pygame.font.SysFont(None, 36)
     titulo = fuente_titulo.render("Solitario del Reloj", True, BLANCO)
@@ -445,6 +461,7 @@ def mostrar_menu_principal():
                     switch_automatico = not switch_automatico
 
         pygame.display.flip()
+
 def mostrar_interfaz_pregunta():
     global pregunta
     fuente_pregunta = pygame.font.SysFont(None, 48)
